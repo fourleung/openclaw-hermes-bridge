@@ -20,7 +20,7 @@ Validated end-to-end against a production ACP agent via a host-process extension
 macOS / Linux:
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/fourleung/openclaw-hermes-bridge.git
 cd openclaw-hermes-bridge
 ./setup.sh
 ```
@@ -28,7 +28,7 @@ cd openclaw-hermes-bridge
 Windows PowerShell:
 
 ```powershell
-git clone <your-repo-url>
+git clone https://github.com/fourleung/openclaw-hermes-bridge.git
 cd openclaw-hermes-bridge
 powershell -ExecutionPolicy Bypass -File .\setup.ps1
 ```
