@@ -151,7 +151,7 @@ export function register(api: any) {
       });
     }
 
-    const workflowId = ctx.sessionKey?.trim() || "openclaw-default";
+    const defaultWorkflowId = ctx.sessionKey?.trim() || "openclaw-default";
 
     return {
       name: "call_hermes",
@@ -159,6 +159,7 @@ export function register(api: any) {
       parameters: HermesSchema,
       execute: async (_toolCallId: string, args: any) => {
         const { prompt, task_id } = args;
+        const workflowId = task_id || defaultWorkflowId;
 
         try {
           const envelope = await sharedBridge.delegate(workflowId, {

@@ -21,6 +21,7 @@ export interface HermesTransportOptions {
   env?: Record<string, string>;
   cwd?: string;
   bootTimeoutMs: number;
+  sessionId?: string;
 }
 
 interface ActivePrompt {
@@ -79,9 +80,10 @@ export class HermesTransportImpl implements HermesTransport {
         clientCapabilities: {},
       });
       const session = await connection.newSession({
+        _meta: opts.sessionId ? { sessionId: opts.sessionId } : undefined,
         cwd: opts.cwd ?? globalThis.process.cwd(),
         mcpServers: [],
-      });
+      } as any);
       return session.sessionId;
     })();
 

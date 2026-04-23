@@ -131,6 +131,7 @@ export class SessionManager {
         env: this.opts.env,
         cwd: this.opts.cwd,
         bootTimeoutMs: this.opts.sessionBootTimeoutMs,
+        sessionId: workflowId,
       });
 
       const rec: SessionRecord = {

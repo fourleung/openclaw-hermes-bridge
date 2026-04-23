@@ -46,6 +46,7 @@ export interface TransportFactory {
     env?: Record<string, string>;
     cwd?: string;
     bootTimeoutMs: number;
+    sessionId?: string;
   }): Promise<HermesTransport>;
 }
 
