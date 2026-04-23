@@ -124,6 +124,9 @@ export function register(api: any) {
       task_id: Type.Optional(Type.String({
         description: "Tracking ID for this subtask.",
       })),
+      workflow_id: Type.Optional(Type.String({
+        description: "Workflow/session reuse key for Hermes context continuity.",
+      })),
     });
 
     const HERMES_OUTPUT_SCHEMA: any = {
@@ -158,8 +161,8 @@ export function register(api: any) {
       description: "Ask Hermes to handle a subtask. High performance reasoning.",
       parameters: HermesSchema,
       execute: async (_toolCallId: string, args: any) => {
-        const { prompt, task_id } = args;
-        const workflowId = task_id || defaultWorkflowId;
+        const { prompt, task_id, workflow_id } = args;
+        const workflowId = workflow_id?.trim() || defaultWorkflowId;
 
         try {
           const envelope = await sharedBridge.delegate(workflowId, {
@@ -172,6 +175,7 @@ export function register(api: any) {
               content: JSON.stringify({
                 answer: envelope.output.answer,
                 task_id,
+                workflow_id: workflowId,
                 session_id: envelope.meta.sessionId,
                 attempt: envelope.meta.attempt,
                 duration_ms: envelope.meta.durationMs,

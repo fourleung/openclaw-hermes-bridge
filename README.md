@@ -153,7 +153,15 @@ This example is for repo-local library usage from this checkout after `npm run b
 
 In normal OpenClaw usage, the generated extension created by `./setup.sh` or `.\setup.ps1` calls `createBridge()` for you, so most users do not need to write this code directly.
 
+### Generated `call_hermes` tool semantics
 
+The generated OpenClaw extension keeps **tracking** and **session reuse** separate:
+
+- `task_id` — per-call tracking / audit ID
+- `workflow_id` — Hermes context continuity key
+- omitted `workflow_id` — falls back to the current OpenClaw `sessionKey`
+
+That means repeated `call_hermes` calls in one OpenClaw session reuse the same Hermes session by default, while callers can still assign a unique `task_id` to every subtask.
 
 ## Architecture
 

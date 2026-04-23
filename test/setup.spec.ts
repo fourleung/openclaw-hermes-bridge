@@ -50,6 +50,10 @@ describe('setupOpenClawExtension', () => {
     const indexSource = await readFile(join(result.extensionDir, 'index.ts'), 'utf8');
     expect(indexSource).toContain('import { createBridge } from "openclaw-hermes-bridge";');
     expect(indexSource).toContain('name: "call_hermes"');
+    expect(indexSource).toContain('workflow_id: Type.Optional(Type.String({');
+    expect(indexSource).toContain('const workflowId = workflow_id?.trim() || defaultWorkflowId;');
+    expect(indexSource).not.toContain('const workflowId = task_id || defaultWorkflowId;');
+    expect(indexSource).toContain('workflow_id: workflowId,');
 
     expect(runCommand).toHaveBeenCalledWith('npm', ['install'], {
       cwd: result.extensionDir,

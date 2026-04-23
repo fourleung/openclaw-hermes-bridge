@@ -153,7 +153,15 @@ await bridge.shutdown();
 
 在常规的 OpenClaw 使用场景中，由 `./setup.sh` 或 `.\setup.ps1` 生成的扩展会自动为您调用 `createBridge()`，多数用户不需要手写这段代码。
 
+### 生成的 `call_hermes` 工具语义
 
+生成出的 OpenClaw 扩展会把**追踪 ID**和**会话复用键**分开：
+
+- `task_id` —— 单次调用的追踪 / 审计 ID
+- `workflow_id` —— Hermes 上下文连续性的复用键
+- 未传 `workflow_id` —— 自动回落到当前 OpenClaw 的 `sessionKey`
+
+这意味着：默认情况下，同一条 OpenClaw 会话里的多次 `call_hermes` 会复用同一个 Hermes 会话；与此同时，调用方仍然可以为每次子任务分配独立的 `task_id`。
 
 ## 系统架构
 
