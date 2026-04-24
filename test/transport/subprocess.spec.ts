@@ -26,7 +26,10 @@ describe('spawnHermes', () => {
     const proc = await spawnHermes({
       command: ['node', '-e', `process.stderr.write("${big}"); setTimeout(()=>{},10000)`],
     });
-    await new Promise((r) => globalThis.setTimeout(r, 300));
+    for (let i = 0; i < 20; i++) {
+      if (proc.stderrTail.length > 0) break;
+      await new Promise((r) => globalThis.setTimeout(r, 100));
+    }
     expect(proc.stderrTail.length).toBeLessThanOrEqual(4096);
     expect(proc.stderrTail.length).toBeGreaterThan(0);
     await proc.close();
@@ -37,7 +40,10 @@ describe('spawnHermes', () => {
       command: ['node', '-e', 'process.stderr.write(process.env.FBK_TEST||"unset");setTimeout(()=>{},10000)'],
       env: { FBK_TEST: 'custom-value' },
     });
-    await new Promise((r) => globalThis.setTimeout(r, 300));
+    for (let i = 0; i < 20; i++) {
+      if (proc.stderrTail.includes('custom-value')) break;
+      await new Promise((r) => globalThis.setTimeout(r, 100));
+    }
     expect(proc.stderrTail).toContain('custom-value');
     await proc.close();
   });

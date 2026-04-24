@@ -50,7 +50,7 @@ export interface Envelope<T> {
   status: EnvelopeStatus;
   output: T | null;
   rawText: string;
-  meta: { sessionId: string | null; attempt: number; durationMs: number };
+  meta: { sessionId: string | null; attempt: number; durationMs: number; generation: number; reused: boolean };
   error: { message: string; cause?: unknown } | null;
 }
 

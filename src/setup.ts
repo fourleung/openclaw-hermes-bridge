@@ -177,6 +177,8 @@ export function register(api: any) {
                 task_id,
                 workflow_id: workflowId,
                 session_id: envelope.meta.sessionId,
+                session_generation: envelope.meta.generation,
+                reused: envelope.meta.reused,
                 attempt: envelope.meta.attempt,
                 duration_ms: envelope.meta.durationMs,
               }),

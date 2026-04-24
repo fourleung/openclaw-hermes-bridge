@@ -31,8 +31,9 @@ function makeFakeHandle(...rawTexts: string[]): SessionHandle & { release: Retur
     idleTimer: null,
     lifetimeTimer: null,
     onEvicted: null,
+    generation: 1,
   } as unknown as SessionRecord;
-  return { session, release: vi.fn() };
+  return { session, release: vi.fn(), reused: false };
 }
 
 function makeFakeManager(handle: SessionHandle): SessionManager {
@@ -143,8 +144,9 @@ function makeHandleFromTransport(transport: HermesTransport): SessionHandle & { 
     idleTimer: null,
     lifetimeTimer: null,
     onEvicted: null,
+    generation: 1,
   } as unknown as SessionRecord;
-  return { session, release: vi.fn() };
+  return { session, release: vi.fn(), reused: false };
 }
 
 describe('delegate — timeout and cancel (per-attempt semantics)', () => {

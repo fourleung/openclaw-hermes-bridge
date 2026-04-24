@@ -58,7 +58,9 @@ describe('integration — fake hermes', () => {
 
     expect(first.status).toBe('timeout');
     expect(second.status).toBe('timeout');
-    expect(first.meta.sessionId).not.toBe(second.meta.sessionId);
+    expect(first.meta.sessionId).toBe(second.meta.sessionId);
+    expect(second.meta.reused).toBe(false);
+    expect(second.meta.generation).toBe(2);
 
     await bridge.shutdown();
   }, 30_000);
@@ -88,8 +90,13 @@ describe('integration — fake hermes', () => {
     const second = await bridge.delegate('wf-reuse', { prompt: 'second', outputSchema: schema });
 
     expect(first.status).toBe('ok');
+    expect(first.meta.reused).toBe(false);
+    expect(first.meta.generation).toBe(1);
+
     expect(second.status).toBe('ok');
     expect(first.meta.sessionId).toBe(second.meta.sessionId);
+    expect(second.meta.reused).toBe(true);
+    expect(second.meta.generation).toBe(1);
 
     await bridge.shutdown();
   }, 30_000);
@@ -106,7 +113,9 @@ describe('integration — fake hermes', () => {
 
     expect(first.status).toBe('ok');
     expect(second.status).toBe('ok');
-    expect(first.meta.sessionId).not.toBe(second.meta.sessionId);
+    expect(first.meta.sessionId).toBe(second.meta.sessionId);
+    expect(second.meta.reused).toBe(false);
+    expect(second.meta.generation).toBe(2);
 
     await bridge.shutdown();
   }, 30_000);
@@ -159,3 +168,4 @@ describe('integration — fake hermes', () => {
     await bridge.shutdown();
   }, 30_000);
 });
+

@@ -30,17 +30,20 @@ export interface SessionRecord {
   idleTimer: TimerHandle | null;
   lifetimeTimer: TimerHandle | null;
   onEvicted: ((reason: 'timeout-kill' | 'lifetime-drain') => void) | null;
+  generation: number;
 }
 
 export interface SessionHandle {
   session: SessionRecord;
   release(): void;
+  reused: boolean;
 }
 
 export class SessionManager {
   private readonly registry = new Map<string, Promise<SessionRecord>>();
   private readonly closing = new Set<SessionRecord>();
   private readonly semaphore: Semaphore;
+  private readonly generations = new Map<string, number>();
   private shutdown_ = false;
   private readonly shutdownController = new globalThis.AbortController();
 
@@ -58,6 +61,7 @@ export class SessionManager {
     const combined = combineSignals(signal, this.shutdownController.signal);
 
     let rec: SessionRecord;
+    let reused = false;
     const existing = this.registry.get(workflowId);
     if (existing) {
       rec = await existing;
@@ -67,6 +71,7 @@ export class SessionManager {
         }
         return this.acquire(workflowId, signal);
       }
+      reused = true;
     } else {
       const p = this.createSession(workflowId, combined);
       this.registry.set(workflowId, p);
@@ -79,7 +84,7 @@ export class SessionManager {
     }
 
     const release = await rec.gate.acquire();
-    return { session: rec, release };
+    return { session: rec, release, reused };
   }
 
   async close(workflowId: string): Promise<void> {
@@ -126,6 +131,8 @@ export class SessionManager {
   private async createSession(workflowId: string, signal: globalThis.AbortSignal): Promise<SessionRecord> {
     const release = await this.semaphore.acquire(signal);
     try {
+      this.opts.logger.debug?.({ component: 'session_manager', workflowId }, 'booting new transport session');
+      
       const transport = await this.opts.factory.open({
         command: this.opts.command,
         env: this.opts.env,
@@ -133,6 +140,9 @@ export class SessionManager {
         bootTimeoutMs: this.opts.sessionBootTimeoutMs,
         sessionId: workflowId,
       });
+
+      const generation = (this.generations.get(workflowId) ?? 0) + 1;
+      this.generations.set(workflowId, generation);
 
       const rec: SessionRecord = {
         workflowId,
@@ -144,7 +154,10 @@ export class SessionManager {
         idleTimer: null,
         lifetimeTimer: null,
         onEvicted: null,
+        generation,
       };
+      
+      this.opts.logger.info?.({ component: 'session_manager', workflowId, generation }, 'transport session created');
 
       const originalClose = rec.transport.close.bind(rec.transport);
       rec.transport.close = async (): Promise<void> => {
@@ -188,13 +201,14 @@ export class SessionManager {
 
   private async closeRecord(rec: SessionRecord): Promise<void> {
     if (rec.state === 'closed' || rec.state === 'closing') return;
+    this.opts.logger.debug?.({ component: 'session_manager', workflowId: rec.workflowId, generation: rec.generation }, 'closing transport session');
     rec.state = 'closing';
     if (rec.idleTimer) globalThis.clearTimeout(rec.idleTimer);
     if (rec.lifetimeTimer) globalThis.clearTimeout(rec.lifetimeTimer);
     try {
       await rec.transport.close();
     } catch (err) {
-      this.opts.logger.warn?.({ err, workflowId: rec.workflowId }, 'transport close failed');
+      this.opts.logger.warn?.({ err, workflowId: rec.workflowId, generation: rec.generation }, 'transport close failed');
     }
     rec.state = 'closed';
     this.closing.delete(rec);

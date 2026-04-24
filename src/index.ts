@@ -39,7 +39,7 @@ export function createBridge(rawOpts: CreateBridgeOptions = {}): Bridge {
           status: 'agent_error',
           output: null,
           rawText: '',
-          meta: { sessionId: null, attempt: 0, durationMs: 0 },
+          meta: { sessionId: null, attempt: 0, durationMs: 0, generation: 0, reused: false },
           error: { message: 'bridge is shut down' },
         };
       }

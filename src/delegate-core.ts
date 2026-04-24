@@ -47,6 +47,8 @@ export async function delegate<T = unknown>(deps: DelegateDeps): Promise<Envelop
       sessionId: null,
       attempt: 0,
       durationMs: Date.now() - startedAt,
+      generation: 0,
+      reused: false,
       error: { message: `invalid outputSchema: ${(err as Error).message}`, cause: err },
     });
   }
@@ -95,7 +97,7 @@ export async function delegate<T = unknown>(deps: DelegateDeps): Promise<Envelop
       logExtractionPath(deps.logger, extracted1.path, rawText.length);
       const v1 = validator(extracted1.value);
       if (v1.valid) {
-        return finalize<T>('ok', v1.value, rawText, sessionId, 1, startedAt, null, deps);
+        return finalize<T>('ok', v1.value, rawText, sessionId, 1, startedAt, null, deps, handle);
       }
       lastErrors = v1.errors;
       extractedValue = extracted1.value;
@@ -129,21 +131,21 @@ export async function delegate<T = unknown>(deps: DelegateDeps): Promise<Envelop
     if (!extracted2) {
       return finalize<T>('schema_error', null, rawText, sessionId, 2, startedAt, {
         message: 'no JSON in repair response',
-      }, deps);
+      }, deps, handle);
     }
     logExtractionPath(deps.logger, extracted2.path, rawText.length);
     const v2 = validator(extracted2.value);
     if (v2.valid) {
-      return finalize<T>('ok', v2.value, rawText, sessionId, 2, startedAt, null, deps);
+      return finalize<T>('ok', v2.value, rawText, sessionId, 2, startedAt, null, deps, handle);
     }
     return finalize<T>('schema_error', null, rawText, sessionId, 2, startedAt, {
       message: `response does not match schema: ${summarizeErrors(v2.errors)}`,
       cause: v2.errors,
-    }, deps);
+    }, deps, handle);
   } catch (err) {
-    return await mapPromptError<T>(err, rawText, sessionId, attempt, startedAt, deps, handle.session, currentTimeout);
+    return await mapPromptError<T>(err, rawText, sessionId, attempt, startedAt, deps, handle, currentTimeout);
   } finally {
-    handle.release();
+    handle?.release();
   }
 }
 
@@ -174,6 +176,8 @@ function mapAcquireError<T>(err: unknown, startedAt: number): Envelope<T> {
     sessionId: null,
     attempt: 0,
     durationMs: Date.now() - startedAt,
+    generation: 0,
+    reused: false,
     error: { message: msg, cause: err },
   });
 }
@@ -185,38 +189,38 @@ async function mapPromptError<T>(
   attempt: number,
   startedAt: number,
   deps: DelegateDeps,
-  rec: SessionRecord,
+  handle: SessionHandle | null,
   attemptTimeout: globalThis.AbortSignal | null,
 ): Promise<Envelope<T>> {
   const msg = err instanceof Error ? err.message : String(err);
 
-  if (attemptTimeout?.aborted) {
-    await waitForAckOrDeadline(rec.transport, 1000, deps.logger).catch(() => { /* ignore */ });
-    void deps.manager.evictTimeoutKill(rec).catch(() => { /* ignore */ });
+  if (attemptTimeout?.aborted && handle) {
+    await waitForAckOrDeadline(handle.session.transport, 1000, deps.logger).catch(() => { /* ignore */ });
+    void deps.manager.evictTimeoutKill(handle.session).catch(() => { /* ignore */ });
     return finalize<T>('timeout', null, rawText, sessionId, attempt, startedAt, {
       message: `timeout after ${deps.opts.timeoutMs ?? deps.defaults.defaultTimeoutMs}ms`,
       cause: err,
-    }, deps);
+    }, deps, handle);
   }
 
   if (deps.manager.shutdownSignal.aborted) {
     return finalize<T>('cancelled', null, rawText, sessionId, attempt, startedAt, {
       message: 'bridge shutting down',
       cause: err,
-    }, deps);
+    }, deps, handle);
   }
 
   if (deps.opts.signal?.aborted) {
     return finalize<T>('cancelled', null, rawText, sessionId, attempt, startedAt, {
       message: 'aborted by caller',
       cause: err,
-    }, deps);
+    }, deps, handle);
   }
 
   return finalize<T>('agent_error', null, rawText, sessionId, attempt, startedAt, {
     message: msg,
     cause: err,
-  }, deps);
+  }, deps, handle);
 }
 
 async function waitForAckOrDeadline(
@@ -240,6 +244,7 @@ function finalize<T>(
   startedAt: number,
   error: Envelope<T>['error'],
   deps: DelegateDeps,
+  handle: SessionHandle | null,
 ): Envelope<T> {
   const env = buildEnvelope<T>({
     status,
@@ -248,6 +253,8 @@ function finalize<T>(
     sessionId,
     attempt,
     durationMs: Date.now() - startedAt,
+    generation: handle?.session.generation ?? 0,
+    reused: handle?.reused ?? false,
     error,
   });
   const emit = makeEmit({
@@ -271,13 +278,15 @@ function buildEnvelope<T>(parts: {
   sessionId: string | null;
   attempt: number;
   durationMs: number;
+  generation: number;
+  reused: boolean;
   error: Envelope<T>['error'];
 }): Envelope<T> {
   return {
     status: parts.status,
     output: parts.output,
     rawText: parts.rawText,
-    meta: { sessionId: parts.sessionId, attempt: parts.attempt, durationMs: parts.durationMs },
+    meta: { sessionId: parts.sessionId, attempt: parts.attempt, durationMs: parts.durationMs, generation: parts.generation, reused: parts.reused },
     error: parts.error,
   };
 }

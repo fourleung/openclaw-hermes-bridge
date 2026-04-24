@@ -50,7 +50,9 @@ describe.skipIf(!E2E)('E2E — real hermes', () => {
       prompt: 'Return {"answer":"b"}',
       outputSchema: schema,
     });
-    expect(a.meta.sessionId).not.toBe(b.meta.sessionId);
+    expect(a.meta.sessionId).toBe(b.meta.sessionId);
+    expect(b.meta.reused).toBe(false);
+    expect(b.meta.generation).toBe(2);
     await bridge.shutdown();
   }, 240_000);
 });

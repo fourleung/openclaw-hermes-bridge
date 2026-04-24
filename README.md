@@ -161,6 +161,10 @@ The generated OpenClaw extension keeps **tracking** and **session reuse** separa
 - `workflow_id` — Hermes context continuity key
 - omitted `workflow_id` — falls back to the current OpenClaw `sessionKey`
 
+The output now includes observability fields to represent the underlying process instance lifecycle:
+- `session_generation`: The generation of the process instance (increments if the instance is recreated after idle timeout, etc.)
+- `reused`: Indicates whether this call reused an existing underlying process instance
+
 That means repeated `call_hermes` calls in one OpenClaw session reuse the same Hermes session by default, while callers can still assign a unique `task_id` to every subtask.
 
 ## Architecture

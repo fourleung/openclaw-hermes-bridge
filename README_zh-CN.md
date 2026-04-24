@@ -161,6 +161,10 @@ await bridge.shutdown();
 - `workflow_id` —— Hermes 上下文连续性的复用键
 - 未传 `workflow_id` —— 自动回落到当前 OpenClaw 的 `sessionKey`
 
+同时，输出新增观测字段来表征底层进程实例的生命周期：
+- `session_generation`: 进程被重新拉起的代次 (例如因空闲回收后重建会递增)
+- `reused`: 本次调用是否复用了已存在的底层进程实例
+
 这意味着：默认情况下，同一条 OpenClaw 会话里的多次 `call_hermes` 会复用同一个 Hermes 会话；与此同时，调用方仍然可以为每次子任务分配独立的 `task_id`。
 
 ## 系统架构

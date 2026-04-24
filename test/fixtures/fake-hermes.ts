@@ -101,8 +101,8 @@ process.stdin.on('data', async (chunk) => {
       if (process.env.FAKE_HANG_INITIALIZE) continue;
       send({ jsonrpc: '2.0', id: msg.id, result: { protocolVersion: 1, agentCapabilities: {} } });
     } else if (msg.method === 'session/new') {
-      sessionCounter += 1;
-      send({ jsonrpc: '2.0', id: msg.id, result: { sessionId: 'sess-' + process.pid + '-' + sessionCounter } });
+      const sid = msg.params.sessionId || (msg.params._meta && msg.params._meta.sessionId) || ('sess-' + process.pid + '-' + (++sessionCounter));
+      send({ jsonrpc: '2.0', id: msg.id, result: { sessionId: sid } });
     } else if (msg.method === 'session/prompt') {
       promptCounter += 1;
       pendingPromptId = msg.id;
