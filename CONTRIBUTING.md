@@ -84,7 +84,7 @@ npm run build                  # emits dist/
 
 - ❌ Add an outer wall-clock timeout around `delegate()` (timeouts are per-attempt).
 - ❌ Trigger repair on `timeout` or `agent_error` (only on `schema_error`).
-- ❌ Reuse a session after timeout-kill.
+- ❌ Reuse a **physical process instance** after timeout-kill (the logical `sessionId` is preserved, but `reused` must be `false` and `generation` incremented).
 - ❌ Import Ajv as `from 'ajv'` (must be `from 'ajv/dist/2020'`).
 - ❌ Cross-workflow session reuse, or close a session on the `final` event.
 - ❌ Make `maxConcurrentSessions` saturation throw (it must block).
