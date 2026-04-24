@@ -1,6 +1,6 @@
 {
   "name": "openclaw-hermes-bridge",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "license": "MIT",
   "description": "OpenClaw-to-Hermes ACP bridge for Node.js with workflow-scoped session reuse, per-attempt timeouts, and schema-validated delegation.",
   "keywords": [

@@ -5,7 +5,18 @@ All notable changes to `openclaw-hermes-bridge` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.0] — 2026-04-24
+
+### Added
+- **Instance continuity observability** — added `reused` (boolean) and `session_generation` (number) fields to track the underlying process instance lifecycle independently of the logical `session_id`.
+- `reused: true` indicates the delegation hit a running transport instance.
+- `session_generation` increments whenever a specific `workflow_id` requires a fresh transport session (e.g., after idle timeout, crash, or explicit `close`).
+- Documented session lifecycle fields in README (English and Chinese).
+- Improved `subprocess` test reliability with stderr polling to avoid flakiness in buffered environments.
+
+### Changed
+- **Session ID Semantics** — `session_id` is now strictly a **logical会话 ID** (echo of `workflow_id`). Physical instance restarts no longer change the returned `sessionId`.
+- Updated integration and E2E tests to align with logical session continuity.
 
 ### Fixed
 - Transport `prompt()` short-circuits when the caller signal is already aborted at entry,
@@ -14,14 +25,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   relying on abort semantics would otherwise never resolve. (`d1272d1`)
 - Default `sessionBootTimeoutMs` raised from 15 s to **60 s** based on empirical
   Hermes cold-start measurements (~35 s including ACP handshake). (`a151550`)
-
-### Added
-- L2 integration scenarios covering shutdown-in-flight and semaphore saturation. (`a8aecf1`)
+- Added L2 integration scenarios covering shutdown-in-flight and semaphore saturation. (`a8aecf1`)
 - First end-to-end integration against real Hermes via an OpenClaw Workspace Extension.
 
-## [0.0.0] — initial scaffold
+## [0.1.0] — 2026-04-21
 
-Initial development of the openclaw-hermes-bridge package.
+Initial release as 0.1.0 (previously tracked as 0.0.0 during scaffolding).
 
 ### Features
 - **Public API** — `createBridge()` returns a `Bridge` with `delegate()`, `close()`,
