@@ -1,5 +1,5 @@
-import { mkdir, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { copyFile, mkdir, writeFile } from 'node:fs/promises';
+import { basename, join } from 'node:path';
 import { homedir } from 'node:os';
 import { spawn } from 'node:child_process';
 
@@ -28,10 +28,12 @@ export async function setupOpenClawExtension(
 ): Promise<SetupOpenClawExtensionResult> {
   const workspaceRoot = opts.workspaceRoot ?? join(homedir(), '.openclaw', 'workspace');
   const extensionDir = join(workspaceRoot, '.openclaw', 'extensions', EXTENSION_ID);
-  const packageRef = opts.packageRef ?? inferPackageRef(opts.packageRoot) ?? `^${opts.packageVersion}`;
+  const requestedPackageRef = opts.packageRef ?? inferPackageRef(opts.packageRoot) ?? `^${opts.packageVersion}`;
   const runCommand = opts.runCommand ?? runCommandDefault;
 
   await mkdir(extensionDir, { recursive: true });
+
+  const packageRef = await materializePackageRef(requestedPackageRef, extensionDir);
 
   await writeFile(
     join(extensionDir, 'package.json'),
@@ -53,6 +55,22 @@ export async function setupOpenClawExtension(
 function inferPackageRef(packageRoot?: string): string | undefined {
   if (!packageRoot) return undefined;
   return `file:${packageRoot}`;
+}
+
+async function materializePackageRef(packageRef: string, extensionDir: string): Promise<string> {
+  if (!packageRef.startsWith('file:') || !packageRef.endsWith('.tgz')) {
+    return packageRef;
+  }
+
+  const sourcePath = packageRef.slice('file:'.length);
+  const destName = basename(sourcePath);
+  const destPath = join(extensionDir, destName);
+
+  if (sourcePath !== destPath) {
+    await copyFile(sourcePath, destPath);
+  }
+
+  return `file:./${destName}`;
 }
 
 function buildPackageJson(packageRef: string): object {

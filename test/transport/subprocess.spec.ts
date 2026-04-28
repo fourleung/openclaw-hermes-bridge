@@ -50,14 +50,26 @@ describe('spawnHermes', () => {
 
   it('close() sends SIGTERM and escalates to SIGKILL', async () => {
     const proc = await spawnHermes({
-      command: ['node', '-e', 'process.on("SIGTERM",()=>{}); setInterval(()=>{},1000)'],
+      command: [
+        'node',
+        '-e',
+        'process.on("SIGTERM",()=>{process.stderr.write("term");}); process.stderr.write("ready"); setInterval(()=>{},1000)',
+      ],
     });
     // Wait for node to register the SIGTERM handler before sending SIGTERM,
-    // otherwise the default handler kills the child immediately.
-    await new Promise((r) => globalThis.setTimeout(r, 300));
+    // otherwise the default handler can kill the child immediately.
+    for (let i = 0; i < 20; i++) {
+      if (proc.stderrTail.includes('ready')) break;
+      await new Promise((r) => globalThis.setTimeout(r, 100));
+    }
+    expect(proc.stderrTail).toContain('ready');
+
     const start = Date.now();
     await proc.close();
     const elapsed = Date.now() - start;
+    const exit = await proc.exited;
+    expect(proc.stderrTail).toContain('term');
+    expect(exit.signal).toBe('SIGKILL');
     expect(elapsed).toBeGreaterThanOrEqual(1900);
     expect(elapsed).toBeLessThan(3500);
   }, 5000);

@@ -1,10 +1,7 @@
 #!/usr/bin/env node
 import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
-import { basename } from 'node:path';
 import { setupOpenClawExtension, type SetupOpenClawExtensionOptions } from './setup.js';
-
-const PACKAGE_NAME = 'openclaw-hermes-bridge';
 
 interface RunCliDeps {
   setupOpenClawExtension: (opts: SetupOpenClawExtensionOptions) => Promise<{
@@ -35,7 +32,7 @@ export async function runCli(argv: string[], deps: RunCliDeps): Promise<number> 
     packageVersion: deps.packageVersion,
     workspaceRoot: parsed.workspaceRoot,
     packageRef: parsed.packageRef,
-    packageRoot: parsed.packageRef ? undefined : inferLocalPackageRoot(deps.cwd),
+    packageRoot: undefined,
   });
 
   deps.stdout.write(
@@ -78,10 +75,6 @@ function usage(): string {
     '',
     'setup installs or updates the OpenClaw extension wiring for this package.',
   ].join('\n');
-}
-
-function inferLocalPackageRoot(cwd: string): string | undefined {
-  return basename(cwd) === PACKAGE_NAME ? cwd : undefined;
 }
 
 async function readPackageVersion(): Promise<string> {

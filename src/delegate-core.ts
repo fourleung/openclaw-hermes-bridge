@@ -1,5 +1,5 @@
 import type { Envelope, DelegateOptions, Subtask, Logger } from './types.js';
-import type { SessionManager, SessionHandle, SessionRecord } from './session-manager.js';
+import type { SessionManager, SessionHandle } from './session-manager.js';
 import { compileValidator, type ValidationError } from './validator.js';
 import { extractJson, type ExtractionPath } from './json-extract.js';
 import { buildInitialPrompt, buildRepairPrompt } from './prompt.js';

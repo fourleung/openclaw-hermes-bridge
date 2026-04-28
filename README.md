@@ -48,7 +48,7 @@ This installs or updates a local OpenClaw extension under your home directory, t
 - macOS / Linux: `~/.openclaw/workspace/.openclaw/extensions/hermes_bridge/`
 - Windows: `%USERPROFILE%\.openclaw\workspace\.openclaw\extensions\hermes_bridge\`
 
-When you run it from this repository checkout, it automatically points the generated extension back at your current local copy with a `file:` dependency. That avoids any npm publish requirement during local setup.
+When you run it from this repository checkout, the script first builds the package, creates a local `npm pack` tarball, and installs the generated extension from that tarball. This keeps the extension's `node_modules` self-contained and avoids symlinking `openclaw-hermes-bridge` back to a source directory outside the extension, which newer OpenClaw security checks reject.
 
 ### Custom OpenClaw Workspace
 
@@ -69,13 +69,15 @@ powershell -ExecutionPolicy Bypass -File .\setup.ps1 --workspace-root C:\path\to
 macOS / Linux:
 
 ```bash
-./setup.sh --package-ref file:/absolute/path/to/openclaw-hermes-bridge
+./setup.sh --package-ref file:/absolute/path/to/openclaw-hermes-bridge-0.2.0.tgz
 ```
+
+Prefer a packed `.tgz` file for local package references. Pointing `--package-ref` at a source directory, for example `file:/absolute/path/to/openclaw-hermes-bridge`, can make npm create a symlink outside the OpenClaw extension directory and may be rejected by OpenClaw's extension security checks.
 
 Windows PowerShell:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\setup.ps1 --package-ref file:C:\absolute\path\to\openclaw-hermes-bridge
+powershell -ExecutionPolicy Bypass -File .\setup.ps1 --package-ref file:C:\absolute\path\to\openclaw-hermes-bridge-0.2.0.tgz
 ```
 
 

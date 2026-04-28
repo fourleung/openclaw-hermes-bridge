@@ -58,10 +58,10 @@ describe('runCli', () => {
     });
   });
 
-  it('infers a local package root from the current working directory', async () => {
+  it('does not infer a local source-directory package ref from cwd', async () => {
     const setupOpenClawExtension = vi.fn(async () => ({
       extensionDir: '/tmp/custom/.openclaw/extensions/hermes_bridge',
-      packageRef: 'file:/tmp/pkg',
+      packageRef: '^0.1.0',
     }));
 
     const code = await runCli(['setup'], {
@@ -77,7 +77,7 @@ describe('runCli', () => {
       packageVersion: '0.1.0',
       workspaceRoot: undefined,
       packageRef: undefined,
-      packageRoot: '/Users/example/openclaw-hermes-bridge',
+      packageRoot: undefined,
     });
   });
 

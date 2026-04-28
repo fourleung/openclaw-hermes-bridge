@@ -48,7 +48,7 @@ powershell -ExecutionPolicy Bypass -File .\setup.ps1
 - macOS / Linux: `~/.openclaw/workspace/.openclaw/extensions/hermes_bridge/`
 - Windows: `%USERPROFILE%\.openclaw\workspace\.openclaw\extensions\hermes_bridge\`
 
-当您从本地代码仓库运行脚本时，它会自动通过 `file:` 依赖将生成的扩展指向当前本地副本。这样在本地开发设置过程中无需执行 npm publish。
+当您从本地代码仓库运行脚本时，脚本会先构建程序包，再通过 `npm pack` 生成本地 tarball，并让扩展从该 tarball 安装依赖。这样扩展自己的 `node_modules` 会保持自包含，不会把 `openclaw-hermes-bridge` 软链接回扩展目录外的源码仓库，从而避开新版 OpenClaw 扩展安全检查对外部符号链接的拦截。
 
 ### 自定义 OpenClaw 工作区
 
@@ -69,13 +69,15 @@ powershell -ExecutionPolicy Bypass -File .\setup.ps1 --workspace-root C:\path\to
 macOS / Linux:
 
 ```bash
-./setup.sh --package-ref file:/absolute/path/to/openclaw-hermes-bridge
+./setup.sh --package-ref file:/absolute/path/to/openclaw-hermes-bridge-0.2.0.tgz
 ```
+
+本地程序包引用建议优先使用打包后的 `.tgz` 文件。不要把 `--package-ref` 指向源码目录，例如 `file:/absolute/path/to/openclaw-hermes-bridge`，否则 npm 可能在扩展 `node_modules` 中创建指向外部目录的符号链接，并被 OpenClaw 的扩展安全检查拒绝。
 
 Windows PowerShell:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\setup.ps1 --package-ref file:C:\absolute\path\to\openclaw-hermes-bridge
+powershell -ExecutionPolicy Bypass -File .\setup.ps1 --package-ref file:C:\absolute\path\to\openclaw-hermes-bridge-0.2.0.tgz
 ```
 
 

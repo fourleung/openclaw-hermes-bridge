@@ -23,7 +23,8 @@ describe('setup.sh', () => {
     await writeFile(
       join(tempRoot, 'npm-script.sh'),
       '#!/bin/sh\n' +
-      'printf "npm:%s:%s\\n" "$PWD" "$*" >> "$TEST_LOG"\n',
+      'printf "npm:%s:%s\\n" "$PWD" "$*" >> "$TEST_LOG"\n' +
+      'if [ "$1" = "pack" ]; then printf "openclaw-hermes-bridge-0.1.0.tgz\\n"; touch openclaw-hermes-bridge-0.1.0.tgz; fi\n',
       'utf8',
     );
     await writeFile(
@@ -52,7 +53,51 @@ describe('setup.sh', () => {
     const log = await readFile(logFile, 'utf8');
     expect(log).toContain(`npm:${repoRoot}:install`);
     expect(log).toContain(`npm:${repoRoot}:run build`);
-    expect(log).toContain(`node:${repoRoot}:dist/cli.js setup --workspace-root /tmp/custom-workspace`);
+    expect(log).toContain(`npm:${repoRoot}:pack --silent`);
+    expect(log).toContain(`node:${repoRoot}:dist/cli.js setup --package-ref file:${repoRoot}/openclaw-hermes-bridge-0.1.0.tgz --workspace-root /tmp/custom-workspace`);
+  });
+
+  it('does not pack when package-ref is explicitly provided', async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), 'ohb-setup-script-'));
+    tempDirs.push(tempRoot);
+
+    const fakeBin = join(tempRoot, 'bin');
+    const logFile = join(tempRoot, 'calls.log');
+    await writeFile(logFile, '', 'utf8');
+    await writeFile(
+      join(tempRoot, 'npm-script.sh'),
+      '#!/bin/sh\n' +
+      'printf "npm:%s:%s\\n" "$PWD" "$*" >> "$TEST_LOG"\n',
+      'utf8',
+    );
+    await writeFile(
+      join(tempRoot, 'node-script.sh'),
+      '#!/bin/sh\n' +
+      'printf "node:%s:%s\\n" "$PWD" "$*" >> "$TEST_LOG"\n',
+      'utf8',
+    );
+    await mkdirAll(fakeBin);
+    await writeFile(join(fakeBin, 'npm'), '#!/bin/sh\nexec "' + join(tempRoot, 'npm-script.sh') + '" "$@"\n', 'utf8');
+    await writeFile(join(fakeBin, 'node'), '#!/bin/sh\nexec "' + join(tempRoot, 'node-script.sh') + '" "$@"\n', 'utf8');
+    await chmod(join(tempRoot, 'npm-script.sh'), 0o755);
+    await chmod(join(tempRoot, 'node-script.sh'), 0o755);
+    await chmod(join(fakeBin, 'npm'), 0o755);
+    await chmod(join(fakeBin, 'node'), 0o755);
+
+    await execFilePromise('bash', ['setup.sh', '--package-ref', 'file:/tmp/custom.tgz'], {
+      cwd: repoRoot,
+      env: {
+        ...globalThis.process.env,
+        PATH: `${fakeBin}:${globalThis.process.env.PATH ?? ''}`,
+        TEST_LOG: logFile,
+      },
+    });
+
+    const log = await readFile(logFile, 'utf8');
+    expect(log).toContain(`npm:${repoRoot}:install`);
+    expect(log).toContain(`npm:${repoRoot}:run build`);
+    expect(log).not.toContain(`npm:${repoRoot}:pack --silent`);
+    expect(log).toContain(`node:${repoRoot}:dist/cli.js setup --package-ref file:/tmp/custom.tgz`);
   });
 });
 

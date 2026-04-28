@@ -92,17 +92,20 @@ describe('setupOpenClawExtension', () => {
     expect(runCommand).toHaveBeenCalledTimes(2);
   });
 
-  it('infers a local file dependency when packageRoot is provided', async () => {
+  it('copies local tarball package refs into the extension directory', async () => {
     const workspaceRoot = await mkdtemp(join(tmpdir(), 'ohb-setup-'));
     const packageRoot = await mkdtemp(join(tmpdir(), 'ohb-package-'));
     tempDirs.push(workspaceRoot, packageRoot);
+
+    const packageTgz = join(packageRoot, 'openclaw-hermes-bridge-0.1.0.tgz');
+    await writeFile(packageTgz, 'packed package', 'utf8');
 
     const runCommand = vi.fn(async () => {});
 
     const result = await setupOpenClawExtension({
       workspaceRoot,
-      packageRoot,
       packageVersion: '0.1.0',
+      packageRef: `file:${packageTgz}`,
       runCommand,
     });
 
@@ -112,8 +115,9 @@ describe('setupOpenClawExtension', () => {
       dependencies: Record<string, string>;
     };
 
-    expect(packageJson.dependencies['openclaw-hermes-bridge']).toBe(`file:${packageRoot}`);
-    expect(result.packageRef).toBe(`file:${packageRoot}`);
+    expect(packageJson.dependencies['openclaw-hermes-bridge']).toBe('file:./openclaw-hermes-bridge-0.1.0.tgz');
+    expect(result.packageRef).toBe('file:./openclaw-hermes-bridge-0.1.0.tgz');
+    expect(await readFile(join(result.extensionDir, 'openclaw-hermes-bridge-0.1.0.tgz'), 'utf8')).toBe('packed package');
   });
 });
 

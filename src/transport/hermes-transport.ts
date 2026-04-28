@@ -7,6 +7,7 @@ import {
   type Agent,
   type Client,
   type ContentBlock,
+  type NewSessionRequest,
   type RequestPermissionRequest,
   type RequestPermissionResponse,
   type SessionNotification,
@@ -79,11 +80,12 @@ export class HermesTransportImpl implements HermesTransport {
         protocolVersion: PROTOCOL_VERSION,
         clientCapabilities: {},
       });
-      const session = await connection.newSession({
-        _meta: opts.sessionId ? { sessionId: opts.sessionId } : undefined,
+      const newSessionRequest: NewSessionRequest = {
+        ...(opts.sessionId ? { _meta: { sessionId: opts.sessionId } } : {}),
         cwd: opts.cwd ?? globalThis.process.cwd(),
         mcpServers: [],
-      } as any);
+      };
+      const session = await connection.newSession(newSessionRequest);
       return session.sessionId;
     })();
 
